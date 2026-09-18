@@ -16,12 +16,49 @@ module tt_um_example (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  assign uio_out = 0;
-  assign uio_oe  = 0;
+  // UART transmitter: continuously sends a fixed byte at a fixed baud rate.
+  // Frame format is 8N1 (1 start bit, 8 data bits LSB-first, 1 stop bit),
+  // repeated back-to-back with no idle gap between frames.
+  localparam [7:0] TX_BYTE       = 8'h55;  // fixed byte to transmit
+  localparam integer CLKS_PER_BIT = 8;     // clock cycles per UART bit (fixed baud rate)
+
+  reg [$clog2(CLKS_PER_BIT)-1:0] clk_count;
+  reg [3:0] bit_index;  // 0 = start bit, 1-8 = data bits, 9 = stop bit
+  reg       tx_reg;
+
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      clk_count <= 0;
+      bit_index <= 0;
+    end else if (clk_count == CLKS_PER_BIT - 1) begin
+      clk_count <= 0;
+      bit_index <= (bit_index == 9) ? 4'd0 : bit_index + 4'd1;
+    end else begin
+      clk_count <= clk_count + 1'b1;
+    end
+  end
+
+  always @(*) begin
+    case (bit_index)
+      4'd0:    tx_reg = 1'b0;          // start bit
+      4'd1:    tx_reg = TX_BYTE[0];
+      4'd2:    tx_reg = TX_BYTE[1];
+      4'd3:    tx_reg = TX_BYTE[2];
+      4'd4:    tx_reg = TX_BYTE[3];
+      4'd5:    tx_reg = TX_BYTE[4];
+      4'd6:    tx_reg = TX_BYTE[5];
+      4'd7:    tx_reg = TX_BYTE[6];
+      4'd8:    tx_reg = TX_BYTE[7];
+      4'd9:    tx_reg = 1'b1;          // stop bit
+      default: tx_reg = 1'b1;
+    endcase
+  end
+
+  assign uo_out  = {7'b0, tx_reg};  // uo_out[0] is the UART TX line
+  assign uio_out = 8'b0;
+  assign uio_oe  = 8'b0;
 
   // List all unused inputs to prevent warnings
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+  wire _unused = &{ena, ui_in, uio_in, 1'b0};
 
 endmodule
