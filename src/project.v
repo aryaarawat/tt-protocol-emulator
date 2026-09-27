@@ -11,7 +11,11 @@
 //   uio[5] out  SPI MOSI
 //   uio[6] out  SPI CS_N (low while a transfer is in progress)
 //   uio[7] out  UART TX
-module tt_um_example (
+module tt_um_example #(
+    // Defaults are for the ASIC; the FPGA wrapper overrides them for 100 MHz
+    parameter integer CLKS_PER_BIT = 8,  // UART: clk cycles per bit
+    parameter integer SPI_CLK_DIV  = 4   // SPI: SCLK = clk / (2 * SPI_CLK_DIV)
+) (
     input  wire [7:0] ui_in,
     output wire [7:0] uo_out,
     input  wire [7:0] uio_in,
@@ -25,8 +29,6 @@ module tt_um_example (
   // ---------------------------------------------------------------------------
   // UART transmitter
   // ---------------------------------------------------------------------------
-
-  localparam integer CLKS_PER_BIT = 8;
 
   reg [$clog2(CLKS_PER_BIT)-1:0] clk_count;
   reg [3:0] bit_index;
@@ -69,7 +71,7 @@ module tt_um_example (
 
   spi_controller #(
       .DATA_WIDTH(8),
-      .CLK_DIV   (4)
+      .CLK_DIV   (SPI_CLK_DIV)
   ) spi (
       .clk    (clk),
       .rst_n  (rst_n),
