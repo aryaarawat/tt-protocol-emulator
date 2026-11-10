@@ -20,7 +20,8 @@ module lane_decode (
     output logic        drive_en,    
     output logic [4:0]  drive_pin,
     output logic [1:0]  drive_act,   
-    output logic        drive_mask  
+    output logic        drive_mask
+)
 
     localparam logic [4:0] OP_NOP   = 5'd0;
     localparam logic [4:0] OP_JMP   = 5'd1;
